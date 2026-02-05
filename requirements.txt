@@ -1,0 +1,26 @@
+# Core dependencies
+python-dotenv>=1.0.0        # Environment variable management
+requests>=2.31.0            # HTTP requests
+
+# Meeting Automation Stack
+google-generativeai>=0.3.0  # Google Gemini API (REQUIRED)
+pyairtable>=2.1.0           # Airtable API client (REQUIRED)
+pydantic>=2.5.0             # Data validation for structured outputs
+
+# Google API libraries (for OAuth/Drive if needed)
+google-auth>=2.23.0
+google-auth-oauthlib>=1.1.0
+google-auth-httplib2>=0.1.1
+google-api-python-client>=2.100.0
+
+# Data processing
+pandas>=2.1.0               # Data manipulation
+openpyxl>=3.1.2            # Excel file support
+
+# AI/LLM APIs (optional alternatives)
+# openai>=1.3.0             # OpenAI API
+# anthropic>=0.7.0          # Anthropic Claude API
+
+# Utilities
+tqdm>=4.66.0               # Progress bars
+pyyaml>=6.0.1              # YAML support
