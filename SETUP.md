@@ -332,12 +332,87 @@ python3 tools/process_meeting.py YOUR_RECORDING_ID --skip-airtable
 
 4. **Workflow Reference**: See [workflows/process_fathom_meeting.md](workflows/process_fathom_meeting.md) for detailed process documentation
 
+## Step 9: Automatic Processing (Webhook)
+
+For production use, set up automatic processing so meetings are handled as soon as transcripts are ready.
+
+### 9.1 Deploy to Vercel
+
+```bash
+# Install Vercel CLI (if not already installed)
+npm install -g vercel
+
+# Deploy from project directory
+cd /path/to/fathom-agent
+vercel
+
+# Follow prompts:
+# - Link to existing project or create new one
+# - Set project name (e.g., "fathom-agent")
+# - Deploy
+```
+
+Your endpoint will be: `https://your-project-name.vercel.app/api/webhook`
+
+### 9.2 Configure Vercel Environment Variables
+
+In Vercel Dashboard → Settings → Environment Variables, add:
+
+```
+FATHOM_API_KEY=your_key_here
+GOOGLE_GEMINI_API_KEY=your_key_here
+AIRTABLE_API_KEY=your_key_here
+AIRTABLE_BASE_ID=your_base_id_here
+AIRTABLE_MEETINGS_TABLE=Meetings
+AIRTABLE_TASKS_TABLE=Tasks
+```
+
+**Important**: Do NOT add `FATHOM_WEBHOOK_SECRET` yet — you'll get this in the next step.
+
+### 9.3 Register Webhook with Fathom
+
+```bash
+# Update VERCEL_URL in setup_webhook.sh to your actual URL
+nano setup_webhook.sh  # Change line 20
+
+# Run the setup script
+export FATHOM_API_KEY=your_key_here
+bash setup_webhook.sh
+```
+
+The script will output a `secret` value starting with `whsec_...`
+
+### 9.4 Add Webhook Secret to Vercel
+
+1. Copy the `secret` from the script output
+2. Go to Vercel Dashboard → Settings → Environment Variables
+3. Add:
+   - Name: `FATHOM_WEBHOOK_SECRET`
+   - Value: `whsec_...` (the full secret)
+4. Save and **Redeploy** the project
+
+### 9.5 Verify Webhook is Live
+
+```bash
+# Test health check
+curl https://your-project-name.vercel.app/api/webhook
+
+# Should return: {"status": "ok"}
+```
+
+**That's it!** Your next Fathom meeting will automatically:
+1. Trigger the webhook when transcript is ready
+2. Summarize with Gemini (Hebrew summary + action items)
+3. Log to Airtable with relational structure
+
+Check Vercel Functions logs to monitor webhook executions.
+
 ## Next Steps
 
-1. Process your first meeting end-to-end
+1. Process your first meeting end-to-end (manual or automatic)
 2. Review the output in Airtable
 3. Adjust Gemini prompt if needed (in `summarize_with_gemini.py`)
-4. Set up automation (webhooks, cron jobs, etc.)
+4. Monitor Vercel logs for webhook executions
 5. Explore additional features (see workflow doc)
 
 ## Getting Help

@@ -37,14 +37,21 @@ When AI handles every step directly, accuracy compounds: 5 steps at 90% each = 5
 
 ```
 .
+├── api/                # Vercel serverless functions
+│   └── webhook.py      # Fathom webhook endpoint (HMAC signature verification)
 ├── workflows/          # Markdown SOPs defining what to do and how
-├── tools/             # Python scripts for deterministic execution
-├── .tmp/              # Temporary files (regenerated as needed)
-├── .env               # API keys and environment variables (gitignored)
-├── credentials.json   # Google OAuth credentials (gitignored)
-├── token.json         # Google OAuth token (gitignored)
-├── CLAUDE.md          # Agent instructions and framework documentation
-└── README.md          # This file
+├── tools/              # Python scripts for deterministic execution
+│   ├── fetch_fathom_transcript.py
+│   ├── summarize_with_gemini.py
+│   ├── log_to_airtable.py
+│   └── process_meeting.py
+├── .tmp/               # Temporary files (regenerated as needed)
+├── .env                # API keys and environment variables (gitignored)
+├── setup_webhook.sh    # One-time webhook registration script
+├── vercel.json         # Vercel deployment configuration
+├── CLAUDE.md           # Agent instructions and framework documentation
+├── SETUP.md            # Detailed setup guide
+└── README.md           # This file
 ```
 
 ## Setup
@@ -74,7 +81,18 @@ When AI handles every step directly, accuracy compounds: 5 steps at 90% each = 5
 
 ## Usage
 
-### Quick Start
+### Automatic Processing (Recommended)
+
+**Webhook-based automation** — meetings process automatically when transcripts are ready:
+
+1. Deploy to Vercel (serverless hosting)
+2. Register webhook with Fathom API
+3. Configure environment variables
+4. Done — future meetings process automatically
+
+See [SETUP.md](SETUP.md#automatic-processing-webhook) for complete setup.
+
+### Manual Processing
 
 ```bash
 # Process a single meeting

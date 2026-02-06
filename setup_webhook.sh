@@ -17,7 +17,7 @@ set -euo pipefail
 # ---------------------------------------------------------------------------
 # CONFIGURATION — edit VERCEL_URL before running
 # ---------------------------------------------------------------------------
-VERCEL_URL="https://YOUR_PROJECT_NAME.vercel.app"
+VERCEL_URL="https://fathom-agent.vercel.app"
 # ---------------------------------------------------------------------------
 
 FATHOM_API="https://api.fathom.ai/external/v1"
