@@ -127,13 +127,16 @@ def verify_signature(raw_body: bytes, headers: dict) -> bool:
 def extract_recording_id(payload: dict) -> str:
     """
     Parse recording_id from the payload's url field.
-    URL format: https://app.fathom.video/recordings/{recording_id}
+    URL formats:
+      - https://app.fathom.video/recordings/{recording_id}
+      - https://fathom.video/calls/{call_id}
     Fallback: epoch timestamp (unique enough for single-user cadence).
     """
     url = payload.get("url", "")
     if url:
         segments = urlparse(url).path.strip("/").split("/")
-        if len(segments) >= 2 and segments[-2] == "recordings" and segments[-1]:
+        # Handle both /recordings/{id} and /calls/{id} formats
+        if len(segments) >= 2 and segments[-2] in ("recordings", "calls") and segments[-1]:
             print(f"Extracted recording_id: {segments[-1]}")
             return segments[-1]
 

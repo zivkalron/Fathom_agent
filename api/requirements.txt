@@ -1,0 +1,4 @@
+# Dependencies for Vercel serverless function
+google-generativeai>=0.3.0
+pyairtable>=2.1.0
+pydantic>=2.5.0
