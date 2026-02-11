@@ -394,16 +394,16 @@ def display_summary(summary: MeetingSummary) -> None:
     print("="*80)
 
 
-def main():
+def main(transcript_file: Optional[Path] = None):
     """Main execution function."""
-    # Check for transcript file argument
-    if len(sys.argv) != 2:
-        print("Usage: python summarize_with_gemini.py <transcript_file>")
-        print("\nExample:")
-        print("  python summarize_with_gemini.py .tmp/transcript_abc123.json")
-        sys.exit(1)
-
-    transcript_file = Path(sys.argv[1])
+    # Check for transcript file argument if not provided
+    if transcript_file is None:
+        if len(sys.argv) != 2:
+            print("Usage: python summarize_with_gemini.py <transcript_file>")
+            print("\nExample:")
+            print("  python summarize_with_gemini.py .tmp/transcript_abc123.json")
+            sys.exit(1)
+        transcript_file = Path(sys.argv[1])
 
     try:
         # Validate environment

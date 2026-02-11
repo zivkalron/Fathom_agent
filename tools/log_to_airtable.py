@@ -428,17 +428,17 @@ def display_results(
     print("\n" + "="*80)
 
 
-def main():
+def main(summary_file: Optional[Path] = None, transcript_file: Optional[Path] = None):
     """Main execution function."""
-    # Check for required arguments
-    if len(sys.argv) != 3:
-        print("Usage: python log_to_airtable.py <summary_file> <transcript_file>")
-        print("\nExample:")
-        print("  python log_to_airtable.py .tmp/summary_abc123.json .tmp/transcript_abc123.json")
-        sys.exit(1)
-
-    summary_file = Path(sys.argv[1])
-    transcript_file = Path(sys.argv[2])
+    # Check for required arguments if not provided
+    if summary_file is None or transcript_file is None:
+        if len(sys.argv) != 3:
+            print("Usage: python log_to_airtable.py <summary_file> <transcript_file>")
+            print("\nExample:")
+            print("  python log_to_airtable.py .tmp/summary_abc123.json .tmp/transcript_abc123.json")
+            sys.exit(1)
+        summary_file = Path(sys.argv[1])
+        transcript_file = Path(sys.argv[2])
 
     try:
         # Validate environment

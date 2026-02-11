@@ -31,6 +31,21 @@ from http.server import BaseHTTPRequestHandler
 from pathlib import Path
 from urllib.parse import urlparse
 
+# ---------------------------------------------------------------------------
+# DYNAMIC IMPORTS
+# ---------------------------------------------------------------------------
+# Add tools/ to sys.path so we can import the worker scripts directly.
+# This avoids subprocess environment issues on Vercel.
+TOOLS_DIR = Path(__file__).resolve().parent.parent / "tools"
+if str(TOOLS_DIR) not in sys.path:
+    sys.path.append(str(TOOLS_DIR))
+
+try:
+    import summarize_with_gemini as summarizer
+    import log_to_airtable as logger
+except ImportError as e:
+    print(f"ERROR: Failed to import tools: {e}", file=sys.stderr)
+
 
 # ---------------------------------------------------------------------------
 # CONSTANTS
@@ -38,7 +53,7 @@ from urllib.parse import urlparse
 
 # tools/ is a sibling of api/ at the project root.
 # __file__ = api/webhook.py  →  .parent = api/  →  .parent.parent = project root
-TOOLS_DIR = Path(__file__).resolve().parent.parent / "tools"
+# TOOLS_DIR is now defined in the DYNAMIC IMPORTS section.
 
 # Vercel's writable filesystem. We nest .tmp inside /tmp so that
 # Path(".tmp") in the tool scripts resolves correctly when cwd="/tmp".
@@ -206,34 +221,31 @@ def run_step(label: str, cmd: list, env: dict) -> None:
 
 
 def run_pipeline(recording_id: str, transcript_path: str) -> None:
-    """Execute summarize → log_to_airtable."""
-    env = os.environ.copy()
-
-    # Fail fast on missing env vars before spawning subprocesses
+    """Execute summarize → log_to_airtable via direct function calls."""
+    # Fail fast on missing env vars
     for var in ("GOOGLE_GEMINI_API_KEY", "AIRTABLE_API_KEY", "AIRTABLE_BASE_ID"):
-        if not env.get(var):
+        if not os.environ.get(var):
             raise EnvironmentError(f"Required env var {var} is not set")
 
+    transcript_file = Path(transcript_path)
     summary_path = f"/tmp/.tmp/summary_{recording_id}.json"
+    summary_file = Path(summary_path)
 
     # Step 1: Summarize with Gemini (Hebrew summary + action items)
-    run_step("summarize_with_gemini", [
-        sys.executable,
-        str(TOOLS_DIR / "summarize_with_gemini.py"),
-        transcript_path,
-    ], env)
+    print("--- summarize_with_gemini ---")
+    exit_code = summarizer.main(transcript_file=transcript_file)
+    if exit_code != 0:
+        raise RuntimeError(f"Summarization failed with exit code {exit_code}")
 
     # Verify output exists before proceeding
-    if not Path(summary_path).exists():
+    if not summary_file.exists():
         raise FileNotFoundError(f"Summary file not produced at {summary_path}")
 
     # Step 2: Log meeting + tasks to Airtable
-    run_step("log_to_airtable", [
-        sys.executable,
-        str(TOOLS_DIR / "log_to_airtable.py"),
-        summary_path,
-        transcript_path,
-    ], env)
+    print("--- log_to_airtable ---")
+    exit_code = logger.main(summary_file=summary_file, transcript_file=transcript_file)
+    if exit_code != 0:
+        raise RuntimeError(f"Airtable logging failed with exit code {exit_code}")
 
 
 # ---------------------------------------------------------------------------
@@ -306,9 +318,9 @@ class handler(BaseHTTPRequestHandler):
             print(f"ERROR: {e}", file=sys.stderr)
             self._json(500, {"error": str(e)})
             return
-        except subprocess.CalledProcessError as e:
-            print(f"ERROR: Pipeline step failed (exit {e.returncode})", file=sys.stderr)
-            self._json(500, {"error": f"Pipeline step failed: {e.stderr}"})
+        except RuntimeError as e:
+            print(f"ERROR: Pipeline step failed: {e}", file=sys.stderr)
+            self._json(500, {"error": str(e)})
             return
         except subprocess.TimeoutExpired:
             print("ERROR: Subprocess timed out", file=sys.stderr)
