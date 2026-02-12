@@ -32,8 +32,11 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 # ---------------------------------------------------------------------------
-# DYNAMIC IMPORTS
+# DIAGNOSTICS & DYNAMIC IMPORTS
 # ---------------------------------------------------------------------------
+print(f"DEBUG: sys.path = {sys.path}")
+print(f"DEBUG: os.environ keys = {list(os.environ.keys())}")
+
 # Add tools/ to sys.path so we can import the worker scripts directly.
 # This avoids subprocess environment issues on Vercel.
 TOOLS_DIR = Path(__file__).resolve().parent.parent / "tools"
@@ -43,8 +46,13 @@ if str(TOOLS_DIR) not in sys.path:
 try:
     import summarize_with_gemini as summarizer
     import log_to_airtable as logger
+    print("DEBUG: Successfully imported summarizer and logger tools")
 except ImportError as e:
-    print(f"ERROR: Failed to import tools: {e}", file=sys.stderr)
+    print(f"CRITICAL ERROR: Failed to import tools: {e}", file=sys.stderr)
+    # We don't exit here because this is a serverless module, but we mark them as None
+    # to avoid NameError and handle them in the pipeline.
+    summarizer = None
+    logger = None
 
 
 # ---------------------------------------------------------------------------
@@ -187,41 +195,14 @@ def normalize_payload(payload: dict) -> tuple:
     return normalized, recording_id
 
 
-# ---------------------------------------------------------------------------
-# SUBPROCESS ORCHESTRATION
-# ---------------------------------------------------------------------------
-# Both tools run with cwd="/tmp" so their internal Path(".tmp") resolves to
-# /tmp/.tmp/.  All file arguments are absolute paths.
-# ---------------------------------------------------------------------------
-
-
-def run_step(label: str, cmd: list, env: dict) -> None:
-    """Run a subprocess step. Raises subprocess.CalledProcessError on failure."""
-    print(f"--- {label} ---")
-    print(f"  cmd: {' '.join(cmd)}")
-
-    result = subprocess.run(
-        cmd,
-        cwd="/tmp",           # Path(".tmp") in tools → /tmp/.tmp/
-        env=env,
-        capture_output=True,
-        text=True,
-        timeout=270,          # margin under Vercel's 300s hard kill
-    )
-
-    if result.stdout:
-        print(result.stdout)
-    if result.stderr:
-        print(result.stderr, file=sys.stderr)
-
-    if result.returncode != 0:
-        raise subprocess.CalledProcessError(
-            result.returncode, cmd, output=result.stdout, stderr=result.stderr
-        )
-
+def check_tools():
+    """Verify tools were imported successfully."""
+    if summarizer is None or logger is None:
+        raise RuntimeError("Tools (summarizer/logger) failed to import. Check requirements.txt and logs.")
 
 def run_pipeline(recording_id: str, transcript_path: str) -> None:
     """Execute summarize → log_to_airtable via direct function calls."""
+    check_tools()
     # Fail fast on missing env vars
     for var in ("GOOGLE_GEMINI_API_KEY", "AIRTABLE_API_KEY", "AIRTABLE_BASE_ID"):
         if not os.environ.get(var):
