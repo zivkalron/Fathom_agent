@@ -34,8 +34,11 @@ from urllib.parse import urlparse
 # ---------------------------------------------------------------------------
 # DIAGNOSTICS & DYNAMIC IMPORTS
 # ---------------------------------------------------------------------------
+# Force line buffering to ensure logs appear in Vercel console immediately
+sys.stdout.reconfigure(line_buffering=True)
 print(f"DEBUG: sys.path = {sys.path}")
 print(f"DEBUG: os.environ keys = {list(os.environ.keys())}")
+print("DEBUG: Webhook handler initializing...")
 
 # Add tools/ to sys.path so we can import the worker scripts directly.
 # This avoids subprocess environment issues on Vercel.
