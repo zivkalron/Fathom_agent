@@ -203,6 +203,13 @@ def check_tools():
 def run_pipeline(recording_id: str, transcript_path: str) -> None:
     """Execute summarize → log_to_airtable via direct function calls."""
     check_tools()
+    
+    # Switch to /tmp so that tools can write to relative paths (e.g. .tmp/)
+    try:
+        os.chdir("/tmp")
+    except Exception as e:
+        print(f"WARNING: Failed to chdir to /tmp: {e}", file=sys.stderr)
+
     # Fail fast on missing env vars
     for var in ("GOOGLE_GEMINI_API_KEY", "AIRTABLE_API_KEY", "AIRTABLE_BASE_ID"):
         if not os.environ.get(var):
