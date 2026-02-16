@@ -117,8 +117,13 @@ def format_attendees(transcript_data: dict) -> str:
     seen = {}  # display_name -> email or name
     for segment in transcript_data.get("transcript", []):
         speaker = segment.get("speaker", {})
-        name = speaker.get("display_name", "Unknown")
-        email = speaker.get("matched_calendar_invitee_email")
+        if isinstance(speaker, dict):
+            name = speaker.get("display_name", "Unknown")
+            email = speaker.get("matched_calendar_invitee_email")
+        else:
+            name = str(speaker)
+            email = None
+            
         # Keep the email if we find one; don't downgrade to name if already set
         if name not in seen or email:
             seen[name] = email or name
